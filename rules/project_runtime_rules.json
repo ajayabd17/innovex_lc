@@ -1,0 +1,72 @@
+{
+  "rule_group": "PROJECT-RUNTIME",
+  "description": "Runtime verification rules for generated 10-field company JSON before DB write.",
+  "scope": "entity_level",
+  "rules": [
+    {
+      "id": "PRJ-001",
+      "event": "always",
+      "description": "Company name must be present.",
+      "severity": "FAIL",
+      "expected_conditions": [
+        {
+          "field": "name",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "id": "PRJ-002",
+      "event": "always",
+      "description": "Category must be present and non-empty.",
+      "severity": "FAIL",
+      "expected_conditions": [
+        {
+          "field": "category",
+          "operator": "regex_match",
+          "value": "^\\s*\\S.*$"
+        }
+      ]
+    },
+    {
+      "id": "PRJ-003",
+      "event": "always",
+      "description": "Website URL should be HTTP/HTTPS.",
+      "severity": "FAIL",
+      "expected_conditions": [
+        {
+          "field": "website_url",
+          "operator": "regex_match",
+          "value": "^https?://.+"
+        }
+      ]
+    },
+    {
+      "id": "PRJ-004",
+      "event": "always",
+      "description": "Primary contact email should be valid format when provided.",
+      "severity": "FAIL",
+      "expected_conditions": [
+        {
+          "field": "primary_contact_email",
+          "operator": "regex_match_optional",
+          "value": "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+        }
+      ]
+    },
+    {
+      "id": "PRJ-005",
+      "event": "always",
+      "description": "NPS should be between -100 and 100 when present.",
+      "severity": "FAIL",
+      "expected_conditions": [
+        {
+          "field": "net_promoter_score",
+          "operator": "numeric_range",
+          "min_val": -100,
+          "max_val": 100
+        }
+      ]
+    }
+  ]
+}

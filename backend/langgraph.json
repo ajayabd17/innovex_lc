@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "innovex_graph": "./orchestration/graph.py:graph"
+  },
+  "env": ".env"
+}
+

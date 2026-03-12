@@ -1,0 +1,72 @@
+{
+  "rule_group": "PROJECT-RUNTIME",
+  "description": "Runtime verification rules for generated 10-field company JSON before DB write.",
+  "scope": "entity_level",
+  "rules": [
+    {
+      "id": "PRJ-001",
+      "event": "always",
+      "description": "Company name must be present.",
+      "severity": "FAIL",
+      "expected_conditions": [
+        {
+          "field": "name",
+          "not_null": true
+        }
+      ]
+    },
+    {
+      "id": "PRJ-002",
+      "event": "always",
+      "description": "Category must be present and non-empty.",
+      "severity": "FAIL",
+      "expected_conditions": [
+        {
+          "field": "category",
+          "operator": "regex_match",
+          "value": "^\\s*\\S.*$"
+        }
+      ]
+    },
+    {
+      "id": "PRJ-003",
+      "event": "always",
+      "description": "Incorporation year should be in valid range.",
+      "severity": "FAIL",
+      "expected_conditions": [
+        {
+          "field": "incorporation_year",
+          "operator": "numeric_range",
+          "min_val": 1800,
+          "max_val": 2100
+        }
+      ]
+    },
+    {
+      "id": "PRJ-004",
+      "event": "always",
+      "description": "Headquarters address must be present and non-empty.",
+      "severity": "FAIL",
+      "expected_conditions": [
+        {
+          "field": "headquarters_address",
+          "operator": "regex_match",
+          "value": "^\\s*\\S.*$"
+        }
+      ]
+    },
+    {
+      "id": "PRJ-005",
+      "event": "always",
+      "description": "Office count must be present and non-empty.",
+      "severity": "FAIL",
+      "expected_conditions": [
+        {
+          "field": "office_count",
+          "operator": "regex_match",
+          "value": "^\\s*\\S.*$"
+        }
+      ]
+    }
+  ]
+}
