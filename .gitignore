@@ -15,6 +15,7 @@ frontend/.next/
 # env
 .env
 .env.local
+.jenkins.deploy.env
 
 # git
 .git
