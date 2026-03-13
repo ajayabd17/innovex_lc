@@ -10,6 +10,7 @@ pipeline {
   parameters {
     string(name: 'IMAGE_TAG', defaultValue: '', description: 'Optional image tag override (defaults to BUILD_NUMBER)')
     string(name: 'DOCKER_REPOSITORY', defaultValue: 'your-dockerhub-user', description: 'Registry namespace/repository owner')
+    string(name: 'DOCKER_PUSH_CREDENTIALS_ID', defaultValue: 'dockerhub-push-creds', description: 'Jenkins credentialsId for Docker Hub push')
     string(name: 'FRONTEND_API_URL', defaultValue: 'http://localhost:8000', description: 'Public backend URL for frontend build')
     string(name: 'CORS_ORIGINS', defaultValue: 'http://localhost:3000,http://127.0.0.1:3000', description: 'Allowed frontend origins for backend')
     booleanParam(name: 'PUSH_IMAGES', defaultValue: true, description: 'Push built images to container registry')
@@ -94,7 +95,7 @@ pipeline {
     stage('Push Docker Images') {
       when { expression { return params.PUSH_IMAGES } }
       steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+        withCredentials([usernamePassword(credentialsId: params.DOCKER_PUSH_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
           script {
             if (isUnix()) {
               sh '''
