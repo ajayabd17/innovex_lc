@@ -98,14 +98,17 @@ pipeline {
           script {
             if (isUnix()) {
               sh '''
-                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                docker logout docker.io || true
+                echo "$DOCKER_PASS" | tr -d '\\r' | docker login docker.io -u "$DOCKER_USER" --password-stdin
                 docker push "$BACKEND_IMAGE"
                 docker push "$FRONTEND_IMAGE"
               '''
             } else {
               powershell '''
                 $ErrorActionPreference = "Stop"
-                $env:DOCKER_PASS | docker login -u "$env:DOCKER_USER" --password-stdin
+                docker logout docker.io | Out-Null
+                $dockerPass = $env:DOCKER_PASS.Trim()
+                $dockerPass | docker login docker.io -u "$env:DOCKER_USER" --password-stdin
                 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                 docker push "$env:BACKEND_IMAGE"
                 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
