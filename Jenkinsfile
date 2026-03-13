@@ -147,12 +147,31 @@ pipeline {
                   return $true
                 }
 
+                function Invoke-DockerLoginLegacy([string]$registry, [string]$user, [string]$pass) {
+                  $psi = New-Object System.Diagnostics.ProcessStartInfo
+                  $psi.FileName = "docker"
+                  $psi.Arguments = "login $registry -u $user -p $pass"
+                  $psi.UseShellExecute = $false
+                  $psi.RedirectStandardOutput = $true
+                  $psi.RedirectStandardError = $true
+                  $proc = New-Object System.Diagnostics.Process
+                  $proc.StartInfo = $psi
+                  $null = $proc.Start()
+                  $stdout = $proc.StandardOutput.ReadToEnd()
+                  $stderr = $proc.StandardError.ReadToEnd()
+                  $proc.WaitForExit()
+                  if ($stdout) { Write-Host $stdout.Trim() }
+                  if ($stderr) { Write-Host $stderr.Trim() }
+                  return ($proc.ExitCode -eq 0)
+                }
+
                 $loginOk = Invoke-DockerLoginWithStdin -registry "docker.io" -user $env:DOCKER_USER -pass $dockerPass
                 if (-not $loginOk) {
                   Write-Host "stdin login failed, trying legacy -p login fallback"
-                  $fallbackOutput = docker login docker.io -u "$env:DOCKER_USER" -p "$dockerPass" 2>$null
-                  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-                  if ($fallbackOutput) { Write-Host $fallbackOutput }
+                  $loginOk = Invoke-DockerLoginLegacy -registry "docker.io" -user $env:DOCKER_USER -pass $dockerPass
+                }
+                if (-not $loginOk) {
+                  throw "Docker login failed with both stdin and fallback methods"
                 }
 
                 docker push "$env:BACKEND_IMAGE"
