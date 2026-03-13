@@ -4,6 +4,7 @@ pipeline {
   options {
     timestamps()
     disableConcurrentBuilds()
+    skipDefaultCheckout(true)
   }
 
   parameters {
@@ -41,8 +42,10 @@ pipeline {
             '''
           } else {
             powershell '''
+              $ErrorActionPreference = "Stop"
               $backendPath = (Resolve-Path "backend").Path
               docker run --rm -v "${backendPath}:/app" -w /app python:3.11-slim sh -lc "python -m compileall -q ."
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             '''
           }
         }
@@ -58,7 +61,9 @@ pipeline {
             '''
           } else {
             powershell '''
+              $ErrorActionPreference = "Stop"
               docker build --target builder --build-arg NEXT_PUBLIC_API_BASE_URL="$env:FRONTEND_API_URL" -t "$($env:FRONTEND_IMAGE)-sanity" .\\frontend
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             '''
           }
         }
@@ -75,8 +80,11 @@ pipeline {
             '''
           } else {
             powershell '''
+              $ErrorActionPreference = "Stop"
               docker build -t "$env:BACKEND_IMAGE" .\\backend
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               docker build --build-arg NEXT_PUBLIC_API_BASE_URL="$env:FRONTEND_API_URL" -t "$env:FRONTEND_IMAGE" .\\frontend
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             '''
           }
         }
@@ -96,9 +104,13 @@ pipeline {
               '''
             } else {
               powershell '''
+                $ErrorActionPreference = "Stop"
                 $env:DOCKER_PASS | docker login -u "$env:DOCKER_USER" --password-stdin
+                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                 docker push "$env:BACKEND_IMAGE"
+                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                 docker push "$env:FRONTEND_IMAGE"
+                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               '''
             }
           }
@@ -124,6 +136,7 @@ EOF
               '''
             } else {
               powershell '''
+                $ErrorActionPreference = "Stop"
                 New-Item -ItemType Directory -Force -Path ".\\backend\\output" | Out-Null
                 @"
 BACKEND_IMAGE=$env:BACKEND_IMAGE
@@ -132,6 +145,7 @@ BACKEND_ENV_FILE=$env:BACKEND_ENV_SECRET_FILE
 CORS_ORIGINS=$env:CORS_ORIGINS
 "@ | Set-Content -Path ".jenkins.deploy.env" -Encoding UTF8
                 docker compose -f infra/docker-compose.prod.yml --env-file .jenkins.deploy.env up -d --remove-orphans
+                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
               '''
             }
           }
@@ -151,6 +165,7 @@ CORS_ORIGINS=$env:CORS_ORIGINS
             '''
           } else {
             powershell '''
+              $ErrorActionPreference = "Stop"
               Start-Sleep -Seconds 10
               Invoke-RestMethod -Uri "http://localhost:8000/v1/health" -Method Get | Out-Null
               Invoke-WebRequest -Uri "http://localhost:3000" -Method Head | Out-Null
