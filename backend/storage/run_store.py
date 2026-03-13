@@ -144,6 +144,8 @@ class RunStore:
             record.status = "succeeded"
             record.result = result
             record.database_id = database_id
+            if events is None:
+                events = list(record.events or [])
             record.events = events
             record.completed_at = _now_iso()
             record.updated_at = _now_iso()
@@ -162,6 +164,8 @@ class RunStore:
                 return None
             record.status = "failed"
             record.error = error
+            if events is None:
+                events = list(record.events or [])
             record.events = events
             record.completed_at = _now_iso()
             record.updated_at = _now_iso()

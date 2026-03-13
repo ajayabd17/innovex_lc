@@ -61,10 +61,24 @@ class RunOrchestrator:
                     events=result.get("events", []),
                 )
             except Exception as exc:
+                existing = self.run_store.get_run(run_id)
+                current_events = list(existing.events or []) if existing else []
+                if current_events:
+                    last_stage = current_events[-1].get("stage") or "init_state"
+                else:
+                    last_stage = "init_state"
+                current_events.append(
+                    {
+                        "stage": last_stage,
+                        "status": "failed",
+                        "error": str(exc),
+                        "source": "api_orchestrator",
+                    }
+                )
                 self.run_store.mark_failed(
                     run_id=run_id,
                     error=str(exc),
-                    events=[{"stage": "api_orchestrator", "status": "failed", "error": str(exc)}],
+                    events=current_events,
                 )
             finally:
                 self.tasks.pop(run_id, None)

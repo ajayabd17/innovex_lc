@@ -145,7 +145,7 @@ class LangGraphPipeline:
                 provider = p
                 break
         if provider is None:
-            return {}
+            return {"active_provider": None}
 
         events = list(state.get("events", []))
         raw_outputs = dict(state.get("raw_outputs", {}))
@@ -317,7 +317,15 @@ class LangGraphPipeline:
             return {"status": "success"}
         if status == "pytest_fail":
             return {"status": "error", "error": "Pytest failed after repair attempt"}
-        return {}
+        if status:
+            if state.get("error"):
+                return {"status": status, "error": state.get("error")}
+            return {"status": status}
+        if state.get("error"):
+            return {"status": "error", "error": state.get("error")}
+        if state.get("final_output"):
+            return {"status": "success"}
+        return {"status": "error", "error": "Pipeline ended without terminal state"}
 
     def _build_canonical_company_json(self, validated_data: CompanyData) -> Dict[str, Any]:
         raw = validated_data.model_dump(exclude={"company_id"})

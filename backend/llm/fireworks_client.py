@@ -12,7 +12,9 @@ def get_fireworks():
         raise ValueError("FIREWORKS_API_KEY not set in environment")
 
     model_name = os.getenv("FIREWORKS_MODEL", "accounts/fireworks/models/minimax-m2p5")
-    max_tokens = int(os.getenv("FIREWORKS_MAX_TOKENS", "24576"))
+    configured_max_tokens = int(os.getenv("FIREWORKS_MAX_TOKENS", "4096"))
+    # Fireworks chat/completions rejects non-streaming requests above 4096 tokens.
+    max_tokens = min(configured_max_tokens, 4096)
 
     return ChatOpenAI(
         model=model_name,
@@ -22,4 +24,3 @@ def get_fireworks():
         max_tokens=max_tokens,
         model_kwargs={"response_format": {"type": "json_object"}},
     )
-
