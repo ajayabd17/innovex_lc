@@ -122,10 +122,38 @@ pipeline {
                 if ([string]::IsNullOrWhiteSpace($dockerPass)) {
                   throw "Docker credential password/token is empty"
                 }
-                $dockerPass | docker login docker.io -u "$env:DOCKER_USER" --password-stdin
-                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-                $dockerPass | docker login https://index.docker.io/v1/ -u "$env:DOCKER_USER" --password-stdin
-                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+                function Invoke-DockerLoginWithStdin([string]$registry, [string]$user, [string]$pass) {
+                  $psi = New-Object System.Diagnostics.ProcessStartInfo
+                  $psi.FileName = "docker"
+                  $psi.Arguments = "login $registry -u $user --password-stdin"
+                  $psi.UseShellExecute = $false
+                  $psi.RedirectStandardInput = $true
+                  $psi.RedirectStandardOutput = $true
+                  $psi.RedirectStandardError = $true
+                  $proc = New-Object System.Diagnostics.Process
+                  $proc.StartInfo = $psi
+                  $null = $proc.Start()
+                  $proc.StandardInput.Write($pass)
+                  $proc.StandardInput.Close()
+                  $stdout = $proc.StandardOutput.ReadToEnd()
+                  $stderr = $proc.StandardError.ReadToEnd()
+                  $proc.WaitForExit()
+                  if ($stdout) { Write-Host $stdout.Trim() }
+                  if ($proc.ExitCode -ne 0) {
+                    if ($stderr) { Write-Host $stderr.Trim() }
+                    return $false
+                  }
+                  return $true
+                }
+
+                $loginOk = Invoke-DockerLoginWithStdin -registry "docker.io" -user $env:DOCKER_USER -pass $dockerPass
+                if (-not $loginOk) {
+                  Write-Host "stdin login failed, trying legacy -p login fallback"
+                  docker login docker.io -u "$env:DOCKER_USER" -p "$dockerPass"
+                  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                }
+
                 docker push "$env:BACKEND_IMAGE"
                 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                 docker push "$env:FRONTEND_IMAGE"
