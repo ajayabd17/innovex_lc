@@ -100,7 +100,12 @@ pipeline {
             if (isUnix()) {
               sh '''
                 docker logout docker.io || true
+                if [ "$DOCKER_USER" != "$REPOSITORY" ]; then
+                  echo "Docker credential username ($DOCKER_USER) does not match DOCKER_REPOSITORY ($REPOSITORY)"
+                  exit 1
+                fi
                 echo "$DOCKER_PASS" | tr -d '\\r' | docker login docker.io -u "$DOCKER_USER" --password-stdin
+                echo "$DOCKER_PASS" | tr -d '\\r' | docker login https://index.docker.io/v1/ -u "$DOCKER_USER" --password-stdin
                 docker push "$BACKEND_IMAGE"
                 docker push "$FRONTEND_IMAGE"
               '''
@@ -109,7 +114,17 @@ pipeline {
                 $ErrorActionPreference = "Stop"
                 docker logout docker.io | Out-Null
                 $dockerPass = $env:DOCKER_PASS.Trim()
+                Write-Host "Docker credential user: $env:DOCKER_USER"
+                Write-Host "Docker repository owner: $env:REPOSITORY"
+                if ($env:DOCKER_USER -ne $env:REPOSITORY) {
+                  throw "Docker credential username does not match DOCKER_REPOSITORY"
+                }
+                if ([string]::IsNullOrWhiteSpace($dockerPass)) {
+                  throw "Docker credential password/token is empty"
+                }
                 $dockerPass | docker login docker.io -u "$env:DOCKER_USER" --password-stdin
+                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                $dockerPass | docker login https://index.docker.io/v1/ -u "$env:DOCKER_USER" --password-stdin
                 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                 docker push "$env:BACKEND_IMAGE"
                 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
