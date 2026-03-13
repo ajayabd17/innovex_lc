@@ -150,8 +150,9 @@ pipeline {
                 $loginOk = Invoke-DockerLoginWithStdin -registry "docker.io" -user $env:DOCKER_USER -pass $dockerPass
                 if (-not $loginOk) {
                   Write-Host "stdin login failed, trying legacy -p login fallback"
-                  docker login docker.io -u "$env:DOCKER_USER" -p "$dockerPass"
+                  $fallbackOutput = docker login docker.io -u "$env:DOCKER_USER" -p "$dockerPass" 2>$null
                   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                  if ($fallbackOutput) { Write-Host $fallbackOutput }
                 }
 
                 docker push "$env:BACKEND_IMAGE"
@@ -215,7 +216,7 @@ CORS_ORIGINS=$env:CORS_ORIGINS
               $ErrorActionPreference = "Stop"
               Start-Sleep -Seconds 10
               Invoke-RestMethod -Uri "http://localhost:8000/v1/health" -Method Get | Out-Null
-              Invoke-WebRequest -Uri "http://localhost:3000" -Method Head | Out-Null
+              Invoke-WebRequest -Uri "http://localhost:3000" -Method Head -UseBasicParsing | Out-Null
             '''
           }
         }
