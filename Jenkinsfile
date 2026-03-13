@@ -54,14 +54,11 @@ pipeline {
         script {
           if (isUnix()) {
             sh '''
-              docker run --rm -v "$PWD/frontend:/app" -w /app node:20-alpine sh -lc "
-                npm ci && npm run build
-              "
+              docker build --target builder --build-arg NEXT_PUBLIC_API_BASE_URL="${FRONTEND_API_URL}" -t "${FRONTEND_IMAGE}-sanity" ./frontend
             '''
           } else {
             powershell '''
-              $frontendPath = (Resolve-Path "frontend").Path
-              docker run --rm -v "${frontendPath}:/app" -w /app node:20-alpine sh -lc "npm ci && npm run build"
+              docker build --target builder --build-arg NEXT_PUBLIC_API_BASE_URL="$env:FRONTEND_API_URL" -t "$($env:FRONTEND_IMAGE)-sanity" .\\frontend
             '''
           }
         }
